@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HR Reserve</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark">HR</div>
+        <div>
+          <h1>HR Reserve</h1>
+          <p>Отклики, резерв и собеседования</p>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Разделы">
+        <button class="nav-item active" data-view="board">Доска</button>
+        <button class="nav-item" data-view="followup">Вернуться</button>
+        <button class="nav-item" data-view="list">Список</button>
+      </nav>
+
+      <div class="sidebar-section">
+        <p class="sidebar-label">Статистика</p>
+        <div class="metric">
+          <span>Всего кандидатов</span>
+          <strong id="totalCount">0</strong>
+        </div>
+        <div class="metric">
+          <span>Нужен контакт</span>
+          <strong id="followupCount">0</strong>
+        </div>
+        <button class="notify-button" id="notifyButton">Включить уведомления</button>
+      </div>
+    </aside>
+
+    <main class="app">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">HeadHunter резерв</p>
+          <h2 id="viewTitle">Доска откликов</h2>
+        </div>
+        <div class="topbar-actions">
+          <button class="ghost-button" id="hhConnectButton">Подключить HH</button>
+          <button class="ghost-button" id="hhImportButton">Импорт HH</button>
+          <button class="ghost-button" id="exportButton">Экспорт CSV</button>
+          <button class="primary-button" id="newCandidateButton">Добавить</button>
+        </div>
+      </header>
+
+      <section class="integration-panel" id="hhPanel">
+        <div>
+          <p class="eyebrow">HeadHunter</p>
+          <p id="hhStatusText">Проверяем подключение HH...</p>
+        </div>
+        <code id="hhRedirectUri"></code>
+      </section>
+
+      <section class="integration-panel avito-panel" id="avitoPanel">
+        <div>
+          <p class="eyebrow">Авито Работа</p>
+          <p id="avitoStatusText">Проверяем подключение Авито...</p>
+        </div>
+        <div class="integration-actions">
+          <button class="ghost-button" id="avitoConnectButton">Подключить Авито</button>
+          <button class="ghost-button" id="avitoImportButton">Импорт Авито</button>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Фильтры">
+        <label class="search">
+          <span>Поиск</span>
+          <input id="searchInput" type="search" placeholder="Имя, вакансия, город, тег" />
+        </label>
+        <label>
+          <span>Вакансия</span>
+          <select id="vacancyFilter">
+            <option value="">Все вакансии</option>
+          </select>
+        </label>
+        <label>
+          <span>Статус</span>
+          <select id="statusFilter">
+            <option value="">Все статусы</option>
+          </select>
+        </label>
+        <label>
+          <span>HR</span>
+          <select id="ownerFilter">
+            <option value="">Все HR</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="content">
+        <div id="boardView" class="board"></div>
+        <div id="followupView" class="list-view hidden"></div>
+        <div id="listView" class="table-wrap hidden"></div>
+      </section>
+    </main>
+
+    <dialog id="candidateDialog">
+      <form method="dialog" id="candidateForm" class="candidate-form">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">Карточка</p>
+            <h3 id="dialogTitle">Новый кандидат</h3>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Закрыть">×</button>
+        </div>
+
+        <input type="hidden" id="candidateId" />
+
+        <div class="form-grid">
+          <label>
+            <span>Имя</span>
+            <input id="candidateName" required />
+          </label>
+          <label>
+            <span>Телефон / контакт</span>
+            <input id="candidateContact" required />
+          </label>
+          <label>
+            <span>Возраст</span>
+            <input id="candidateAge" type="number" min="14" max="100" required />
+          </label>
+          <label>
+            <span>Вакансия</span>
+            <input id="candidateVacancy" required />
+          </label>
+          <label>
+            <span>Ссылка на HH</span>
+            <input id="candidateHhUrl" type="url" placeholder="https://hh.ru/..." required />
+          </label>
+          <label>
+            <span>Статус</span>
+            <select id="candidateStatus"></select>
+          </label>
+          <label>
+            <span>Дата возврата</span>
+            <input id="candidateFollowup" type="date" />
+          </label>
+          <label>
+            <span>HR</span>
+            <input id="candidateOwner" required placeholder="Например: Мария" />
+          </label>
+        </div>
+
+        <label>
+          <span>Теги</span>
+          <input id="candidateTags" placeholder="лето, сменный график, опыт продаж" />
+        </label>
+
+        <label>
+          <span>Комментарий</span>
+          <textarea id="candidateComment" rows="4" required></textarea>
+        </label>
+
+        <div class="dialog-actions">
+          <button type="button" class="danger-button hidden" id="deleteCandidateButton">Удалить</button>
+          <div class="dialog-spacer"></div>
+          <button class="ghost-button" value="cancel">Отмена</button>
+          <button class="primary-button" id="saveCandidateButton" value="default">Сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>
