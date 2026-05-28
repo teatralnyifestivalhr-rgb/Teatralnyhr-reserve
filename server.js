@@ -396,8 +396,8 @@ async function importHhNegotiations() {
     collectionsFound += collections.length;
     for (const collection of collections) {
       if (!isResponseHhCollection(collection)) continue;
-      
-const items = await getHhCollectionItems(collection.url, token, { onlyUpdates: true });
+
+      const items = await getHhCollectionItems(collection.url, token, { onlyUpdates: true });
       itemsFound += items.length;
       for (const item of items) {
         if (!isImportableHhNegotiation(item, collection)) {
