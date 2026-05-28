@@ -453,7 +453,6 @@ async function getHhNegotiationCollections(vacancyId, token) {
   (data.generated_collections || []).forEach(visit);
   return result;
 }
-}
 
 async function getHhCollectionItems(collectionUrl, token) {
   const result = [];
