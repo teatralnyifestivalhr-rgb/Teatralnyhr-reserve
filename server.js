@@ -384,26 +384,42 @@ async function importHhNegotiations() {
   if (!employerId) throw new Error("HH employer id was not found for the authorized user");
 
   const vacancies = await getHhActiveVacancies(employerId, token);
+  const existingIds = new Set((await store.listCandidates()).map((candidate) => candidate.id));
   let imported = 0;
   let skipped = 0;
+  let collectionsFound = 0;
+  let itemsFound = 0;
 
   for (const vacancy of vacancies) {
     const collections = await getHhNegotiationCollections(vacancy.id, token);
+    collectionsFound += collections.length;
     for (const collection of collections) {
       const items = await getHhCollectionItems(collection.url, token);
+      itemsFound += items.length;
       for (const item of items) {
-        const candidate = mapHhNegotiation(item, vacancy, me);
+        if (!isImportableHhNegotiation(item, collection)) {
+          skipped += 1;
+          continue;
+        }
+
+        const fullResume = await getHhResumeDetails(item, token);
+        const candidate = mapHhNegotiation(item, vacancy, me, fullResume);
         if (!candidate) {
           skipped += 1;
           continue;
         }
+        if (existingIds.has(candidate.id)) {
+          skipped += 1;
+          continue;
+        }
         await store.upsertCandidate(candidate);
+        existingIds.add(candidate.id);
         imported += 1;
       }
     }
   }
 
-  return { imported, skipped, vacancies: vacancies.length };
+  return { imported, skipped, vacancies: vacancies.length, collections: collectionsFound, found: itemsFound };
 }
 
 async function getHhActiveVacancies(employerId, token) {
@@ -457,8 +473,20 @@ async function getHhCollectionItems(collectionUrl, token) {
   return result;
 }
 
-function mapHhNegotiation(item, vacancy, me) {
+async function getHhResumeDetails(item, token) {
   const resume = item.resume || item.resumes?.[0] || {};
+  if (!resume.id) return resume;
+
+  try {
+    return await hhGet(`/resumes/${encodeURIComponent(resume.id)}`, token);
+  } catch {
+    return resume;
+  }
+}
+
+function mapHhNegotiation(item, vacancy, me, fullResume = {}) {
+  const shortResume = item.resume || item.resumes?.[0] || {};
+  const resume = { ...shortResume, ...fullResume };
   const applicant = item.applicant || {};
   const hhId = String(item.id || item.topic_id || `${vacancy.id}:${resume.id || applicant.id || ""}`);
   if (!hhId || hhId.endsWith(":")) return null;
@@ -467,12 +495,13 @@ function mapHhNegotiation(item, vacancy, me) {
   const name = nameParts.join(" ") || resume.title || applicant.name || "Кандидат HH";
   const hhUrl = resume.alternate_url || item.alternate_url || item.url || `https://hh.ru/resume/${resume.id || ""}`;
   const owner = me.first_name || me.name || "HH";
+  const contact = extractHhContact(resume) || "HH";
 
   return normalizeCandidate({
     id: `hh:${hhId}`,
     hhId,
     name,
-    contact: "HH",
+    contact,
     age: resume.age || "",
     vacancy: vacancy.name || item.vacancy?.name || "Вакансия HH",
     hhUrl,
@@ -482,6 +511,32 @@ function mapHhNegotiation(item, vacancy, me) {
     comment: "Импортировано из HeadHunter. Проверьте карточку и назначьте статус.",
     source: "hh",
   });
+}
+
+function extractHhContact(resume) {
+  const contacts = [
+    ...(Array.isArray(resume.contact) ? resume.contact : []),
+    ...(Array.isArray(resume.contacts) ? resume.contacts : []),
+  ];
+
+  const formatted = contacts.map((contact) => ({ contact, value: formatHhContact(contact) }));
+  const phone = formatted.find(({ contact, value }) => {
+    const type = String(contact?.type?.id || contact?.type?.name || "").toLowerCase();
+    return value && (type.includes("phone") || type.includes("тел"));
+  });
+
+  return phone?.value || formatted.find(({ value }) => value)?.value || "";
+}
+
+function formatHhContact(contact) {
+  const value = contact?.value;
+  if (!value) return "";
+  if (typeof value === "string") return value;
+  if (value.formatted) return value.formatted;
+  if (value.country || value.city || value.number) return [value.country, value.city, value.number].filter(Boolean).join(" ");
+  if (value.email) return value.email;
+  return "";
+}
 }
 
 async function refreshHhTokenIfNeeded() {
