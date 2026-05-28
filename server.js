@@ -412,7 +412,7 @@ async function getHhActiveVacancies(employerId, token) {
   let pages = 1;
 
   while (page < pages) {
-    const data = await hhGet(`/employers/${employerId}/vacancies/active?per_page=100&page=${page}`, token);
+    const data = await hhGet(`/employers/${employerId}/vacancies/active?per_page=50&page=${page}`, token);
     result.push(...(data.items || data.vacancies || []));
     pages = Number(data.pages || 1);
     page += 1;
@@ -433,7 +433,7 @@ async function getHhCollectionItems(collectionUrl, token) {
 
   while (page < pages) {
     const url = new URL(collectionUrl);
-    url.searchParams.set("per_page", "100");
+    url.searchParams.set("per_page", "50");
     url.searchParams.set("page", String(page));
     const data = await hhGet(url.toString(), token);
     result.push(...(data.items || []));
