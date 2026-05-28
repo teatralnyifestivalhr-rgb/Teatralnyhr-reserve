@@ -422,8 +422,21 @@ async function getHhActiveVacancies(employerId, token) {
 }
 
 async function getHhNegotiationCollections(vacancyId, token) {
-  const data = await hhGet(`/negotiations?vacancy_id=${encodeURIComponent(vacancyId)}`, token);
-  return data.collections || [];
+  const data = await hhGet(`/negotiations?vacancy_id=${encodeURIComponent(vacancyId)}&with_generated_collections=true`, token);
+  const seen = new Set();
+  const result = [];
+
+  const visit = (collection) => {
+    if (!collection || !collection.url || seen.has(collection.url)) return;
+    seen.add(collection.url);
+    result.push(collection);
+    (collection.sub_collections || []).forEach(visit);
+  };
+
+  (data.collections || []).forEach(visit);
+  (data.generated_collections || []).forEach(visit);
+  return result;
+}
 }
 
 async function getHhCollectionItems(collectionUrl, token) {
