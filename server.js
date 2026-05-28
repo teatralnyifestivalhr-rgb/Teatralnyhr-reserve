@@ -537,7 +537,6 @@ function formatHhContact(contact) {
   if (value.email) return value.email;
   return "";
 }
-}
 
 async function refreshHhTokenIfNeeded() {
   const expiresAt = Number((await store.getSetting("hh_expires_at")) || 0);
