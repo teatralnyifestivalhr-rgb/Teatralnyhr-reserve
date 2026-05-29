@@ -15,6 +15,7 @@ const HH_CLIENT_SECRET = process.env.HH_CLIENT_SECRET || "";
 const HH_REDIRECT_URI = process.env.HH_REDIRECT_URI || `http://localhost:${PORT}/api/hh/callback`;
 const AVITO_CLIENT_ID = process.env.AVITO_CLIENT_ID || "";
 const AVITO_CLIENT_SECRET = process.env.AVITO_CLIENT_SECRET || "";
+const HH_IMPORT_SAFE_LIMIT = Number(process.env.HH_IMPORT_SAFE_LIMIT || 10);
 
 const SUPABASE_URL = trimTrailingSlash(process.env.SUPABASE_URL || "");
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
@@ -75,6 +76,10 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === "/api/hh/import" && req.method === "POST") {
       return json(res, 200, await importHhNegotiations());
+    }
+
+    if (url.pathname === "/api/hh/preview" && req.method === "GET") {
+      return json(res, 200, await getHhImportPreview());
     }
 
     if (url.pathname === "/api/hh/message" && req.method === "POST") {
@@ -390,6 +395,10 @@ async function importHhNegotiations() {
 
   const vacancies = await getHhActiveVacancies(employerId, token);
   const vacanciesWithUnread = vacancies.filter((vacancy) => Number(vacancy.counters?.unread_responses || 0) > 0);
+  const plannedUnread = vacanciesWithUnread.reduce((sum, vacancy) => sum + Number(vacancy.counters?.unread_responses || 0), 0);
+  if (plannedUnread > HH_IMPORT_SAFE_LIMIT) {
+    throw new Error(`HH API видит ${plannedUnread} новых откликов. Импорт остановлен, чтобы не загрузить лишнее. Сначала откройте диагностику HH.`);
+  }
   const existingIds = new Set((await store.listCandidates()).map((candidate) => candidate.id));
   let imported = 0;
   let skipped = 0;
@@ -435,6 +444,62 @@ async function importHhNegotiations() {
   return { imported, skipped, vacancies: vacancies.length, unreadVacancies: vacanciesWithUnread.length, collections: collectionsFound, found: itemsFound };
 }
 
+async function getHhImportPreview() {
+  if (!HH_CLIENT_ID || !HH_CLIENT_SECRET) throw new Error("HH_CLIENT_ID and HH_CLIENT_SECRET are not configured");
+
+  const token = await refreshHhTokenIfNeeded();
+  if (!token) throw new Error("HH is not connected");
+
+  const me = await hhGet("/me", token);
+  const employerId = me.employer?.id || me.employers?.[0]?.id;
+  if (!employerId) throw new Error("HH employer id was not found for the authorized user");
+
+  const vacancies = await getHhActiveVacancies(employerId, token);
+  const rows = [];
+  let plannedUnread = 0;
+
+  for (const vacancy of vacancies) {
+    const counters = vacancy.counters || {};
+    const counterTotal = Object.values(counters).reduce((sum, value) => sum + Number(value || 0), 0);
+    if (!counterTotal) continue;
+
+    const unreadResponses = Number(counters.unread_responses || 0);
+    plannedUnread += unreadResponses;
+    const row = {
+      id: vacancy.id,
+      name: vacancy.name,
+      counters,
+      unreadResponses,
+      responseCollections: [],
+      updatesFound: 0,
+    };
+
+    try {
+      const collections = (await getHhNegotiationCollections(vacancy.id, token)).filter(isResponseHhCollection);
+      for (const collection of collections) {
+        const items = await getHhCollectionItems(collection.url, token, { onlyUpdates: true, maxPages: 1 });
+        row.responseCollections.push({
+          id: collection.id,
+          name: collection.name,
+          count: items.length,
+        });
+        row.updatesFound += items.length;
+      }
+    } catch (error) {
+      row.error = error.message;
+    }
+
+    rows.push(row);
+  }
+
+  return {
+    safeLimit: HH_IMPORT_SAFE_LIMIT,
+    plannedUnread,
+    vacancies: rows.length,
+    rows,
+  };
+}
+
 async function getHhActiveVacancies(employerId, token) {
   const result = [];
   let page = 0;
@@ -471,8 +536,9 @@ async function getHhCollectionItems(collectionUrl, token, options = {}) {
   const result = [];
   let page = 0;
   let pages = 1;
+  const maxPages = Number(options.maxPages || Infinity);
 
-  while (page < pages) {
+  while (page < pages && page < maxPages) {
     const url = new URL(collectionUrl);
     url.searchParams.set("per_page", "50");
     url.searchParams.set("page", String(page));

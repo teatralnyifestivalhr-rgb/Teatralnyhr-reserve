@@ -193,6 +193,14 @@ async function importHeadHunter() {
   els.hhStatusText.textContent = "Импортируем отклики из HH...";
 
   try {
+    const previewResponse = await fetch("/api/hh/preview");
+    const preview = await previewResponse.json();
+    if (previewResponse.ok && preview.plannedUnread > preview.safeLimit) {
+      els.hhStatusText.innerHTML = `HH API видит ${preview.plannedUnread} новых откликов. Импорт остановлен. <button class="inline-action" id="showHhPreviewButton" type="button">Показать диагностику</button>`;
+      document.querySelector("#showHhPreviewButton").addEventListener("click", () => showHhPreview(preview));
+      return;
+    }
+
     const response = await fetch("/api/hh/import", { method: "POST" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.message || "Импорт HH не удался");
@@ -205,6 +213,18 @@ async function importHeadHunter() {
   } finally {
     await refreshHeadHunterStatus();
   }
+}
+
+function showHhPreview(preview) {
+  const lines = preview.rows.map((row) => {
+    const counters = Object.entries(row.counters || {}).map(([key, value]) => `${key}: ${value}`).join(", ");
+    const collections = row.responseCollections.map((item) => `${item.name || item.id}: ${item.count}`).join("; ");
+    return `${row.name}: ${counters || "счётчиков нет"}${collections ? ` | обновления в коллекциях: ${collections}` : ""}`;
+  });
+  els.hhStatusText.innerHTML = `
+    <strong>Диагностика HH:</strong>
+    <pre class="diagnostic-box">${escapeHtml(lines.join("\n") || "HH не вернул вакансии со счётчиками.")}</pre>
+  `;
 }
 
 async function refreshAvitoStatus() {

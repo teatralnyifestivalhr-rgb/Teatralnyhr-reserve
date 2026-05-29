@@ -536,6 +536,28 @@ textarea:focus {
   font-weight: 700;
 }
 
+.inline-action {
+  border: 0;
+  background: transparent;
+  color: var(--hh-red);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.diagnostic-box {
+  max-height: 240px;
+  overflow: auto;
+  margin: 10px 0 0;
+  padding: 10px;
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  white-space: pre-wrap;
+  font: 12px/1.45 Consolas, monospace;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;
