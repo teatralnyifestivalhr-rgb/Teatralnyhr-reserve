@@ -458,6 +458,18 @@ textarea:focus {
   color: var(--muted);
 }
 
+.contact-channel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef8f1;
+  color: #217a3a;
+  font-size: 12px;
+  font-weight: 800;
+}
+
 .card-vacancy {
   margin: 12px 0 0;
   color: var(--ink);

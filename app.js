@@ -9,6 +9,9 @@ const STATUSES = [
   "Архив",
 ];
 
+const CONTACT_CHANNELS = ["Telegram", "ВК"];
+const CONTACT_CHANNEL_PREFIX = "Куда написали: ";
+
 const STORAGE_KEY = "hr-reserve-candidates-v1";
 const USE_API = location.protocol !== "file:";
 
@@ -338,6 +341,7 @@ function renderBoard(items) {
 function renderCandidateCard(candidate) {
   const tags = normalizeTags(candidate.tags);
   const source = getCandidateSource(candidate);
+  const contactChannel = getContactChannel(candidate);
   const profileUrl = candidate.hhUrl ? escapeHtml(candidate.hhUrl) : "";
   return `
     <article class="candidate-card">
@@ -353,6 +357,7 @@ function renderCandidateCard(candidate) {
       </div>
       <p class="card-vacancy">${escapeHtml(candidate.vacancy || "Вакансия не указана")}</p>
       <p class="card-meta">Ведёт: ${escapeHtml(candidate.owner || "HR не указан")}</p>
+      ${contactChannel ? `<p class="card-meta">Куда написали: <strong>${escapeHtml(contactChannel)}</strong></p>` : ""}
       ${candidate.followup ? `<p class="card-meta ${getFollowupClass(candidate)}">Вернуться: ${formatDate(candidate.followup)}</p>` : ""}
       ${profileUrl ? `<a class="profile-link" href="${profileUrl}" target="_blank" rel="noreferrer">${escapeHtml(source.linkLabel)}</a>` : ""}
       <p class="card-comment">${escapeHtml(candidate.comment || "Комментария пока нет")}</p>
@@ -376,6 +381,16 @@ function getCandidateSource(candidate) {
     return { key: "hh", label: "HH", linkLabel: "Открыть резюме HH" };
   }
   return { key: "manual", label: "Вручную", linkLabel: "Открыть ссылку" };
+}
+
+function getContactChannel(candidate) {
+  const tag = normalizeTags(candidate.tags).find((item) => item.startsWith(CONTACT_CHANNEL_PREFIX));
+  return tag ? tag.slice(CONTACT_CHANNEL_PREFIX.length).trim() : "";
+}
+
+function applyContactChannel(tags, channel) {
+  const cleanTags = normalizeTags(tags).filter((tag) => !tag.startsWith(CONTACT_CHANNEL_PREFIX));
+  return channel ? [...cleanTags, `${CONTACT_CHANNEL_PREFIX}${channel}`] : cleanTags;
 }
 
 function renderFollowups(items) {
@@ -415,6 +430,7 @@ function renderTable(items) {
           <th>Кандидат</th>
           <th>Вакансия</th>
           <th>Статус</th>
+          <th>Куда написали</th>
           <th>Вернуться</th>
           <th>Источник</th>
           <th>Комментарий</th>
@@ -426,6 +442,7 @@ function renderTable(items) {
             <td><button class="link-button ghost-button" data-edit="${candidate.id}">${escapeHtml(candidate.name)}</button><div class="row-sub">${escapeHtml(candidate.contact || "")}${candidate.age ? ` · ${escapeHtml(candidate.age)} лет` : ""}</div></td>
             <td>${escapeHtml(candidate.vacancy)}<div class="row-sub">${escapeHtml(candidate.owner || "")}</div></td>
             <td><span class="status-chip">${escapeHtml(candidate.status)}</span></td>
+            <td>${getContactChannel(candidate) ? `<span class="contact-channel">${escapeHtml(getContactChannel(candidate))}</span>` : ""}</td>
             <td>${candidate.followup ? formatDate(candidate.followup) : ""}</td>
             <td><span class="source-pill source-${getCandidateSource(candidate).key}">${escapeHtml(getCandidateSource(candidate).label)}</span>${candidate.hhUrl ? `<div class="row-sub"><a href="${escapeHtml(candidate.hhUrl)}" target="_blank" rel="noreferrer">${escapeHtml(getCandidateSource(candidate).linkLabel)}</a></div>` : ""}</td>
             <td>${escapeHtml(candidate.comment || "")}</td>
@@ -491,6 +508,7 @@ function openCandidateDialog(id) {
   document.querySelector("#candidateId").value = candidate?.id || "";
   document.querySelector("#candidateName").value = candidate?.name || "";
   document.querySelector("#candidateContact").value = candidate?.contact || "";
+  document.querySelector("#candidateContactChannel").value = getContactChannel(candidate || {});
   document.querySelector("#candidateAge").value = candidate?.age || "";
   document.querySelector("#candidateVacancy").value = candidate?.vacancy || "";
   document.querySelector("#candidateHhUrl").value = candidate?.hhUrl || "";
@@ -517,7 +535,7 @@ async function saveCandidate(event) {
     status: document.querySelector("#candidateStatus").value,
     followup: document.querySelector("#candidateFollowup").value,
     owner: document.querySelector("#candidateOwner").value.trim(),
-    tags: normalizeTags(document.querySelector("#candidateTags").value),
+    tags: applyContactChannel(normalizeTags(document.querySelector("#candidateTags").value), document.querySelector("#candidateContactChannel").value),
     comment: document.querySelector("#candidateComment").value.trim(),
     updatedAt: new Date().toISOString(),
   };
@@ -543,10 +561,11 @@ async function deleteCandidate() {
 
 function exportCsv() {
   const rows = [
-    ["Имя", "Контакт", "Возраст", "Вакансия", "Статус", "Дата возврата", "Ссылка HH", "HR", "Теги", "Комментарий"],
+    ["Имя", "Контакт", "Куда написали", "Возраст", "Вакансия", "Статус", "Дата возврата", "Ссылка", "HR", "Теги", "Комментарий"],
     ...getVisibleCandidates().map((candidate) => [
       candidate.name,
       candidate.contact,
+      getContactChannel(candidate),
       candidate.age,
       candidate.vacancy,
       candidate.status,
