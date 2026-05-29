@@ -75,7 +75,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === "/api/hh/import" && req.method === "POST") {
-      return json(res, 200, await importHhNegotiations());
+      return json(res, 409, {
+        error: "hh_import_disabled",
+        message: "Импорт HH временно остановлен: HH API отдаёт лишние отклики. Сначала используйте диагностику HH.",
+      });
     }
 
     if (url.pathname === "/api/hh/preview" && req.method === "GET") {
