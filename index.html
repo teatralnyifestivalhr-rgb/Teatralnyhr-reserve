@@ -126,6 +126,7 @@
             <span>Куда написали</span>
             <select id="candidateContactChannel">
               <option value="">Не указано</option>
+              <option value="HH">HH</option>
               <option value="Telegram">Telegram</option>
               <option value="ВК">ВК</option>
             </select>
@@ -171,6 +172,33 @@
           <div class="dialog-spacer"></div>
           <button class="ghost-button" value="cancel">Отмена</button>
           <button class="primary-button" id="saveCandidateButton" value="default">Сохранить</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="hhMessageDialog">
+      <form method="dialog" id="hhMessageForm" class="candidate-form">
+        <div class="dialog-head">
+          <div>
+            <p class="eyebrow">HeadHunter</p>
+            <h3>Написать кандидату</h3>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Закрыть">×</button>
+        </div>
+
+        <input type="hidden" id="hhMessageCandidateId" />
+
+        <label>
+          <span>Сообщение</span>
+          <textarea id="hhMessageText" rows="7" required></textarea>
+        </label>
+
+        <p class="form-status" id="hhMessageStatus"></p>
+
+        <div class="dialog-actions">
+          <div class="dialog-spacer"></div>
+          <button class="ghost-button" value="cancel">Отмена</button>
+          <button class="primary-button" id="sendHhMessageButton" value="default">Отправить в HH</button>
         </div>
       </form>
     </dialog>

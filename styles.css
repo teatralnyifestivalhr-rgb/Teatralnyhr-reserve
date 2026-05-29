@@ -499,6 +499,43 @@ textarea:focus {
   text-decoration: underline;
 }
 
+.message-button,
+.table-message-button {
+  border: 1px solid var(--hh-red);
+  background: #ffffff;
+  color: var(--hh-red);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.message-button {
+  display: inline-flex;
+  margin-top: 8px;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.table-message-button {
+  display: block;
+  margin-top: 6px;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.message-button:hover,
+.table-message-button:hover {
+  background: var(--hh-red-soft);
+}
+
+.form-status {
+  min-height: 20px;
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .tag-row {
   display: flex;
   flex-wrap: wrap;

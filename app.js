@@ -9,7 +9,7 @@ const STATUSES = [
   "Архив",
 ];
 
-const CONTACT_CHANNELS = ["Telegram", "ВК"];
+const CONTACT_CHANNELS = ["HH", "Telegram", "ВК"];
 const CONTACT_CHANNEL_PREFIX = "Куда написали: ";
 
 const STORAGE_KEY = "hr-reserve-candidates-v1";
@@ -80,6 +80,11 @@ const els = {
   dialog: document.querySelector("#candidateDialog"),
   form: document.querySelector("#candidateForm"),
   dialogTitle: document.querySelector("#dialogTitle"),
+  hhMessageDialog: document.querySelector("#hhMessageDialog"),
+  hhMessageForm: document.querySelector("#hhMessageForm"),
+  hhMessageCandidateId: document.querySelector("#hhMessageCandidateId"),
+  hhMessageText: document.querySelector("#hhMessageText"),
+  hhMessageStatus: document.querySelector("#hhMessageStatus"),
   deleteButton: document.querySelector("#deleteCandidateButton"),
   exportButton: document.querySelector("#exportButton"),
   notifyButton: document.querySelector("#notifyButton"),
@@ -102,6 +107,7 @@ els.vacancyFilter.addEventListener("change", render);
 els.statusFilter.addEventListener("change", render);
 els.ownerFilter.addEventListener("change", render);
 els.form.addEventListener("submit", saveCandidate);
+els.hhMessageForm.addEventListener("submit", sendHhMessage);
 els.deleteButton.addEventListener("click", deleteCandidate);
 els.exportButton.addEventListener("click", exportCsv);
 els.notifyButton.addEventListener("click", requestNotifications);
@@ -336,6 +342,9 @@ function renderBoard(items) {
   els.boardView.querySelectorAll("[data-edit]").forEach((button) => {
     button.addEventListener("click", () => openCandidateDialog(button.dataset.edit));
   });
+  els.boardView.querySelectorAll("[data-hh-message]").forEach((button) => {
+    button.addEventListener("click", () => openHhMessageDialog(button.dataset.hhMessage));
+  });
 }
 
 function renderCandidateCard(candidate) {
@@ -360,6 +369,7 @@ function renderCandidateCard(candidate) {
       ${contactChannel ? `<p class="card-meta">Куда написали: <strong>${escapeHtml(contactChannel)}</strong></p>` : ""}
       ${candidate.followup ? `<p class="card-meta ${getFollowupClass(candidate)}">Вернуться: ${formatDate(candidate.followup)}</p>` : ""}
       ${profileUrl ? `<a class="profile-link" href="${profileUrl}" target="_blank" rel="noreferrer">${escapeHtml(source.linkLabel)}</a>` : ""}
+      ${source.key === "hh" ? `<button class="message-button" type="button" data-hh-message="${candidate.id}">Написать в HH</button>` : ""}
       <p class="card-comment">${escapeHtml(candidate.comment || "Комментария пока нет")}</p>
       <div class="tag-row">
         ${isFollowupDue(candidate) ? `<span class="tag followup-badge">пора вернуться</span>` : ""}
@@ -444,7 +454,7 @@ function renderTable(items) {
             <td><span class="status-chip">${escapeHtml(candidate.status)}</span></td>
             <td>${getContactChannel(candidate) ? `<span class="contact-channel">${escapeHtml(getContactChannel(candidate))}</span>` : ""}</td>
             <td>${candidate.followup ? formatDate(candidate.followup) : ""}</td>
-            <td><span class="source-pill source-${getCandidateSource(candidate).key}">${escapeHtml(getCandidateSource(candidate).label)}</span>${candidate.hhUrl ? `<div class="row-sub"><a href="${escapeHtml(candidate.hhUrl)}" target="_blank" rel="noreferrer">${escapeHtml(getCandidateSource(candidate).linkLabel)}</a></div>` : ""}</td>
+            <td><span class="source-pill source-${getCandidateSource(candidate).key}">${escapeHtml(getCandidateSource(candidate).label)}</span>${candidate.hhUrl ? `<div class="row-sub"><a href="${escapeHtml(candidate.hhUrl)}" target="_blank" rel="noreferrer">${escapeHtml(getCandidateSource(candidate).linkLabel)}</a></div>` : ""}${getCandidateSource(candidate).key === "hh" ? `<button class="table-message-button" type="button" data-hh-message="${candidate.id}">Написать в HH</button>` : ""}</td>
             <td>${escapeHtml(candidate.comment || "")}</td>
           </tr>
         `).join("")}
@@ -454,6 +464,9 @@ function renderTable(items) {
 
   els.listView.querySelectorAll("[data-edit]").forEach((button) => {
     button.addEventListener("click", () => openCandidateDialog(button.dataset.edit));
+  });
+  els.listView.querySelectorAll("[data-hh-message]").forEach((button) => {
+    button.addEventListener("click", () => openHhMessageDialog(button.dataset.hhMessage));
   });
 }
 
@@ -524,7 +537,8 @@ function openCandidateDialog(id) {
 async function saveCandidate(event) {
   event.preventDefault();
   const id = document.querySelector("#candidateId").value || crypto.randomUUID();
-  const exists = candidates.some((item) => item.id === id);
+  const previous = candidates.find((item) => item.id === id);
+  const exists = Boolean(previous);
   const candidate = {
     id,
     name: document.querySelector("#candidateName").value.trim(),
@@ -538,6 +552,8 @@ async function saveCandidate(event) {
     tags: applyContactChannel(normalizeTags(document.querySelector("#candidateTags").value), document.querySelector("#candidateContactChannel").value),
     comment: document.querySelector("#candidateComment").value.trim(),
     updatedAt: new Date().toISOString(),
+    hhId: previous?.hhId || "",
+    source: previous?.source || "manual",
   };
 
   candidates = candidates.some((item) => item.id === id)
@@ -548,6 +564,63 @@ async function saveCandidate(event) {
   if (USE_API) candidates = await loadCandidates();
   els.dialog.close();
   render();
+}
+
+function openHhMessageDialog(id) {
+  const candidate = candidates.find((item) => item.id === id);
+  if (!candidate) return;
+
+  els.hhMessageCandidateId.value = candidate.id;
+  els.hhMessageText.value = buildDefaultHhMessage(candidate);
+  els.hhMessageStatus.textContent = "";
+  els.hhMessageDialog.showModal();
+}
+
+function buildDefaultHhMessage(candidate) {
+  return `Здравствуйте, ${candidate.name}!
+
+Спасибо за отклик на вакансию "${candidate.vacancy}".
+Меня зовут ${candidate.owner || "HR"}, я HR-менеджер компании.
+
+Подскажите, пожалуйста, удобно ли вам обсудить вакансию?`;
+}
+
+async function sendHhMessage(event) {
+  event.preventDefault();
+  const candidateId = els.hhMessageCandidateId.value;
+  const message = els.hhMessageText.value.trim();
+  const candidate = candidates.find((item) => item.id === candidateId);
+
+  els.hhMessageStatus.textContent = "Отправляем сообщение в HH...";
+
+  try {
+    const response = await fetch("/api/hh/message", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ candidateId, message }),
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.message || result.error || "Не удалось отправить сообщение в HH");
+
+    if (candidate) {
+      const stamp = new Date().toLocaleDateString("ru-RU");
+      const updatedCandidate = {
+        ...candidate,
+        comment: [candidate.comment, `${stamp}: отправили сообщение в HH.`].filter(Boolean).join("\n"),
+        tags: applyContactChannel(candidate.tags, "HH"),
+        updatedAt: new Date().toISOString(),
+      };
+      candidates = candidates.map((item) => (item.id === candidate.id ? updatedCandidate : item));
+      await persist(updatedCandidate, "PUT");
+      if (USE_API) candidates = await loadCandidates();
+      render();
+    }
+
+    els.hhMessageStatus.textContent = "Сообщение отправлено в HH.";
+    setTimeout(() => els.hhMessageDialog.close(), 600);
+  } catch (error) {
+    els.hhMessageStatus.textContent = error.message || "Не удалось отправить сообщение в HH.";
+  }
 }
 
 async function deleteCandidate() {

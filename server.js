@@ -77,6 +77,10 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, await importHhNegotiations());
     }
 
+    if (url.pathname === "/api/hh/message" && req.method === "POST") {
+      return json(res, 200, await sendHhNegotiationMessage(await readJson(req)));
+    }
+
     if (url.pathname === "/api/avito/status" && req.method === "GET") {
       return json(res, 200, await getAvitoStatus());
     }
@@ -567,6 +571,25 @@ function formatHhContact(contact) {
   return "";
 }
 
+async function sendHhNegotiationMessage(payload) {
+  if (!HH_CLIENT_ID || !HH_CLIENT_SECRET) throw new Error("HH_CLIENT_ID and HH_CLIENT_SECRET are not configured");
+
+  const candidateId = String(payload?.candidateId || "").trim();
+  const message = String(payload?.message || "").trim();
+  if (!candidateId) throw new Error("Не выбран кандидат");
+  if (!message) throw new Error("Введите текст сообщения");
+
+  const candidate = (await store.listCandidates()).find((item) => item.id === candidateId);
+  if (!candidate) throw new Error("Кандидат не найден");
+  if (!candidate.hhId) throw new Error("У кандидата нет ID отклика HH. Нужно импортировать его из HH заново.");
+
+  const token = await refreshHhTokenIfNeeded();
+  if (!token) throw new Error("HH is not connected");
+
+  await hhPostForm(`/negotiations/${encodeURIComponent(candidate.hhId)}/messages`, token, { message });
+  return { ok: true };
+}
+
 async function importAvitoApplications(options = {}) {
   if (!AVITO_CLIENT_ID || !AVITO_CLIENT_SECRET) throw new Error("AVITO_CLIENT_ID and AVITO_CLIENT_SECRET are not configured");
 
@@ -806,6 +829,25 @@ async function hhGet(pathnameOrUrl, token) {
       Authorization: `Bearer ${token}`,
       "User-Agent": "HR Reserve local app (hr@example.local)",
     },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.description || data.errors?.[0]?.value || `HH request failed: ${response.status}`);
+  return data;
+}
+
+async function hhPostForm(pathnameOrUrl, token, payload) {
+  const url = pathnameOrUrl.startsWith("http") ? pathnameOrUrl : `${HH_API}${pathnameOrUrl}`;
+  const body = new URLSearchParams();
+  Object.entries(payload).forEach(([key, value]) => body.set(key, value));
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+      "User-Agent": "HR Reserve local app (hr@example.local)",
+    },
+    body,
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(data.description || data.errors?.[0]?.value || `HH request failed: ${response.status}`);
