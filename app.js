@@ -337,14 +337,24 @@ function renderBoard(items) {
 
 function renderCandidateCard(candidate) {
   const tags = normalizeTags(candidate.tags);
+  const source = getCandidateSource(candidate);
+  const profileUrl = candidate.hhUrl ? escapeHtml(candidate.hhUrl) : "";
   return `
     <article class="candidate-card">
       <div class="card-title">
-        <h4>${escapeHtml(candidate.name)}</h4>
+        <div>
+          <h4>${escapeHtml(candidate.name)}</h4>
+          <div class="source-line">
+            <span class="source-pill source-${source.key}">${escapeHtml(source.label)}</span>
+            ${candidate.age ? `<span>${escapeHtml(candidate.age)} лет</span>` : `<span>Возраст не указан</span>`}
+          </div>
+        </div>
         <button data-edit="${candidate.id}">Открыть</button>
       </div>
-      <p class="card-meta">${escapeHtml(candidate.vacancy)} · ${candidate.age ? `${escapeHtml(candidate.age)} лет · ` : ""}${escapeHtml(candidate.owner || "HR не указан")}</p>
+      <p class="card-vacancy">${escapeHtml(candidate.vacancy || "Вакансия не указана")}</p>
+      <p class="card-meta">Ведёт: ${escapeHtml(candidate.owner || "HR не указан")}</p>
       ${candidate.followup ? `<p class="card-meta ${getFollowupClass(candidate)}">Вернуться: ${formatDate(candidate.followup)}</p>` : ""}
+      ${profileUrl ? `<a class="profile-link" href="${profileUrl}" target="_blank" rel="noreferrer">${escapeHtml(source.linkLabel)}</a>` : ""}
       <p class="card-comment">${escapeHtml(candidate.comment || "Комментария пока нет")}</p>
       <div class="tag-row">
         ${isFollowupDue(candidate) ? `<span class="tag followup-badge">пора вернуться</span>` : ""}
@@ -352,6 +362,20 @@ function renderCandidateCard(candidate) {
       </div>
     </article>
   `;
+}
+
+function getCandidateSource(candidate) {
+  const source = String(candidate.source || "").toLowerCase();
+  const url = String(candidate.hhUrl || "").toLowerCase();
+  const tags = normalizeTags(candidate.tags).join(" ").toLowerCase();
+
+  if (source.includes("avito") || url.includes("avito") || tags.includes("авито")) {
+    return { key: "avito", label: "Авито", linkLabel: "Открыть отклик Авито" };
+  }
+  if (source.includes("hh") || url.includes("hh.ru") || tags.includes("hh")) {
+    return { key: "hh", label: "HH", linkLabel: "Открыть резюме HH" };
+  }
+  return { key: "manual", label: "Вручную", linkLabel: "Открыть ссылку" };
 }
 
 function renderFollowups(items) {
@@ -392,7 +416,7 @@ function renderTable(items) {
           <th>Вакансия</th>
           <th>Статус</th>
           <th>Вернуться</th>
-          <th>HH</th>
+          <th>Источник</th>
           <th>Комментарий</th>
         </tr>
       </thead>
@@ -403,7 +427,7 @@ function renderTable(items) {
             <td>${escapeHtml(candidate.vacancy)}<div class="row-sub">${escapeHtml(candidate.owner || "")}</div></td>
             <td><span class="status-chip">${escapeHtml(candidate.status)}</span></td>
             <td>${candidate.followup ? formatDate(candidate.followup) : ""}</td>
-            <td>${candidate.hhUrl ? `<a href="${escapeHtml(candidate.hhUrl)}" target="_blank" rel="noreferrer">Открыть</a>` : ""}</td>
+            <td><span class="source-pill source-${getCandidateSource(candidate).key}">${escapeHtml(getCandidateSource(candidate).label)}</span>${candidate.hhUrl ? `<div class="row-sub"><a href="${escapeHtml(candidate.hhUrl)}" target="_blank" rel="noreferrer">${escapeHtml(getCandidateSource(candidate).linkLabel)}</a></div>` : ""}</td>
             <td>${escapeHtml(candidate.comment || "")}</td>
           </tr>
         `).join("")}

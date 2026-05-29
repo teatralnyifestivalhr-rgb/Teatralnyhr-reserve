@@ -422,12 +422,69 @@ textarea:focus {
   font-weight: 800;
 }
 
+.source-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.source-hh {
+  background: var(--hh-red-soft);
+  color: var(--hh-red);
+}
+
+.source-avito {
+  background: #eaf2ff;
+  color: #2364d2;
+}
+
+.source-manual {
+  background: #f2f4f7;
+  color: var(--muted);
+}
+
+.card-vacancy {
+  margin: 12px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
 .card-meta,
 .card-comment {
   margin: 8px 0 0;
   color: var(--muted);
   font-size: 13px;
   line-height: 1.45;
+}
+
+.profile-link {
+  display: inline-flex;
+  margin-top: 10px;
+  color: var(--hh-red);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.profile-link:hover {
+  text-decoration: underline;
 }
 
 .tag-row {
