@@ -9,6 +9,7 @@ const DATA_DIR = path.join(ROOT, "data");
 const DB_PATH = path.join(DATA_DIR, "hr-reserve.sqlite");
 
 const HH_API = "https://api.hh.ru";
+const AVITO_API = "https://api.avito.ru";
 const HH_CLIENT_ID = process.env.HH_CLIENT_ID || "";
 const HH_CLIENT_SECRET = process.env.HH_CLIENT_SECRET || "";
 const HH_REDIRECT_URI = process.env.HH_REDIRECT_URI || `http://localhost:${PORT}/api/hh/callback`;
@@ -81,10 +82,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (url.pathname === "/api/avito/import" && req.method === "POST") {
-      return json(res, 501, {
-        error: "not_implemented",
-        message: "РРјРїРѕСЂС‚ РђРІРёС‚Рѕ Р·Р°Р»РѕР¶РµРЅ, РЅРѕ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ РЅСѓР¶РЅС‹ РєР»СЋС‡Рё Рё РїРѕРґС‚РІРµСЂР¶РґРµРЅРЅС‹Р№ РґРѕСЃС‚СѓРї Рє API РђРІРёС‚Рѕ Р Р°Р±РѕС‚Р°.",
-      });
+      return json(res, 200, await importAvitoApplications(await readJson(req).catch(() => ({}))));
     }
 
     return serveStatic(url.pathname, res);
@@ -269,7 +267,7 @@ function normalizeCandidate(candidate) {
     age: String(candidate.age || "").trim(),
     vacancy: String(candidate.vacancy || "").trim(),
     hhUrl: String(candidate.hhUrl || "").trim(),
-    status: String(candidate.status || "РќРѕРІС‹Р№").trim(),
+    status: String(candidate.status || "Р СњР С•Р Р†РЎвЂ№Р в„–").trim(),
     followup: String(candidate.followup || "").trim(),
     owner: String(candidate.owner || "").trim(),
     tags: Array.isArray(candidate.tags) ? candidate.tags.map(String).map((tag) => tag.trim()).filter(Boolean) : [],
@@ -284,30 +282,30 @@ function demoCandidates() {
   return [
     normalizeCandidate({
       id: crypto.randomUUID(),
-      name: "РђРЅРЅР° РљСѓР·РЅРµС†РѕРІР°",
+      name: "Р С’Р Р…Р Р…Р В° Р С™РЎС“Р В·Р Р…Р ВµРЎвЂ Р С•Р Р†Р В°",
       contact: "+7 900 000-00-11",
       age: "20",
-      vacancy: "РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ",
+      vacancy: "Р С’Р Т‘Р СР С‘Р Р…Р С‘РЎРѓРЎвЂљРЎР‚Р В°РЎвЂљР С•РЎР‚",
       hhUrl: "https://hh.ru/",
-      status: "Р РµР·РµСЂРІ Р»РµС‚Рѕ",
+      status: "Р В Р ВµР В·Р ВµРЎР‚Р Р† Р В»Р ВµРЎвЂљР С•",
       followup: "2026-05-20",
-      owner: "РњР°СЂРёСЏ",
-      tags: ["Р»РµС‚Рѕ", "РІРµС‡РµСЂРЅРёРµ СЃРјРµРЅС‹"],
-      comment: "Р“РѕС‚РѕРІР° РІС‹Р№С‚Рё РїРѕСЃР»Рµ СЃРµСЃСЃРёРё. РҐРѕСЂРѕС€Р°СЏ РєРѕРјРјСѓРЅРёРєР°С†РёСЏ, СЃС‚РѕРёС‚ РІРµСЂРЅСѓС‚СЊСЃСЏ Р±Р»РёР¶Рµ Рє РёСЋРЅСЋ.",
+      owner: "Р СљР В°РЎР‚Р С‘РЎРЏ",
+      tags: ["Р В»Р ВµРЎвЂљР С•", "Р Р†Р ВµРЎвЂЎР ВµРЎР‚Р Р…Р С‘Р Вµ РЎРѓР СР ВµР Р…РЎвЂ№"],
+      comment: "Р вЂњР С•РЎвЂљР С•Р Р†Р В° Р Р†РЎвЂ№Р в„–РЎвЂљР С‘ Р С—Р С•РЎРѓР В»Р Вµ РЎРѓР ВµРЎРѓРЎРѓР С‘Р С‘. Р ТђР С•РЎР‚Р С•РЎв‚¬Р В°РЎРЏ Р С”Р С•Р СР СРЎС“Р Р…Р С‘Р С”Р В°РЎвЂ Р С‘РЎРЏ, РЎРѓРЎвЂљР С•Р С‘РЎвЂљ Р Р†Р ВµРЎР‚Р Р…РЎС“РЎвЂљРЎРЉРЎРѓРЎРЏ Р В±Р В»Р С‘Р В¶Р Вµ Р С” Р С‘РЎР‹Р Р…РЎР‹.",
       source: "demo",
     }),
     normalizeCandidate({
       id: crypto.randomUUID(),
-      name: "РР»СЊСЏ РЎРѕРєРѕР»РѕРІ",
+      name: "Р ВР В»РЎРЉРЎРЏ Р РЋР С•Р С”Р С•Р В»Р С•Р Р†",
       contact: "@ilya_s",
       age: "27",
-      vacancy: "РњРµРЅРµРґР¶РµСЂ РїРѕ РїСЂРѕРґР°Р¶Р°Рј",
+      vacancy: "Р СљР ВµР Р…Р ВµР Т‘Р В¶Р ВµРЎР‚ Р С—Р С• Р С—РЎР‚Р С•Р Т‘Р В°Р В¶Р В°Р С",
       hhUrl: "https://hh.ru/",
-      status: "РЎРѕР±РµСЃРµРґРѕРІР°РЅРёРµ",
+      status: "Р РЋР С•Р В±Р ВµРЎРѓР ВµР Т‘Р С•Р Р†Р В°Р Р…Р С‘Р Вµ",
       followup: "2026-05-06",
-      owner: "РћР»СЊРіР°",
-      tags: ["РѕРїС‹С‚ РїСЂРѕРґР°Р¶", "СЃСЂРѕС‡РЅРѕ"],
-      comment: "РќР°Р·РЅР°С‡РµРЅРѕ РїРµСЂРІРёС‡РЅРѕРµ РёРЅС‚РµСЂРІСЊСЋ, СѓС‚РѕС‡РЅРёС‚СЊ РґРµС‚Р°Р»Рё РїРѕ РіСЂР°С„РёРєСѓ.",
+      owner: "Р С›Р В»РЎРЉР С–Р В°",
+      tags: ["Р С•Р С—РЎвЂ№РЎвЂљ Р С—РЎР‚Р С•Р Т‘Р В°Р В¶", "РЎРѓРЎР‚Р С•РЎвЂЎР Р…Р С•"],
+      comment: "Р СњР В°Р В·Р Р…Р В°РЎвЂЎР ВµР Р…Р С• Р С—Р ВµРЎР‚Р Р†Р С‘РЎвЂЎР Р…Р С•Р Вµ Р С‘Р Р…РЎвЂљР ВµРЎР‚Р Р†РЎРЉРЎР‹, РЎС“РЎвЂљР С•РЎвЂЎР Р…Р С‘РЎвЂљРЎРЉ Р Т‘Р ВµРЎвЂљР В°Р В»Р С‘ Р С—Р С• Р С–РЎР‚Р В°РЎвЂћР С‘Р С”РЎС“.",
       source: "demo",
     }),
   ];
@@ -325,10 +323,13 @@ async function getHhStatus() {
 }
 
 async function getAvitoStatus() {
+  const expiresAt = Number((await store.getSetting("avito_expires_at")) || 0);
   return {
     configured: Boolean(AVITO_CLIENT_ID && AVITO_CLIENT_SECRET),
-    connected: Boolean(await store.getSetting("avito_access_token")),
+    connected: Boolean(AVITO_CLIENT_ID && AVITO_CLIENT_SECRET),
     needsAccess: !AVITO_CLIENT_ID || !AVITO_CLIENT_SECRET,
+    expiresAt,
+    expired: expiresAt ? Date.now() > expiresAt : false,
   };
 }
 
@@ -336,7 +337,7 @@ async function createHhAuthUrl() {
   if (!HH_CLIENT_ID || !HH_CLIENT_SECRET) {
     return {
       error: "missing_credentials",
-      message: "Р”РѕР±Р°РІСЊС‚Рµ HH_CLIENT_ID Рё HH_CLIENT_SECRET РІ РѕРєСЂСѓР¶РµРЅРёРµ СЃРµСЂРІРµСЂР°.",
+      message: "Р вЂќР С•Р В±Р В°Р Р†РЎРЉРЎвЂљР Вµ HH_CLIENT_ID Р С‘ HH_CLIENT_SECRET Р Р† Р С•Р С”РЎР‚РЎС“Р В¶Р ВµР Р…Р С‘Р Вµ РЎРѓР ВµРЎР‚Р Р†Р ВµРЎР‚Р В°.",
       redirectUri: HH_REDIRECT_URI,
     };
   }
@@ -495,11 +496,11 @@ function isImportableHhNegotiation(item, collection) {
     collection.name,
   ].filter(Boolean).join(" ").toLowerCase();
 
-  if (stateText.includes("discard") || stateText.includes("reject") || stateText.includes("archive") || stateText.includes("РѕС‚РєР°Р·") || stateText.includes("Р°СЂС…РёРІ")) {
+  if (stateText.includes("discard") || stateText.includes("reject") || stateText.includes("archive") || stateText.includes("Р С•РЎвЂљР С”Р В°Р В·") || stateText.includes("Р В°РЎР‚РЎвЂ¦Р С‘Р Р†")) {
     return false;
   }
 
-  return stateText.includes("response") || stateText.includes("РѕС‚РєР»РёРє");
+  return stateText.includes("response") || stateText.includes("Р С•РЎвЂљР С”Р В»Р С‘Р С”");
 }
 async function getHhResumeDetails(item, token) {
   const resume = item.resume || item.resumes?.[0] || {};
@@ -520,7 +521,7 @@ function mapHhNegotiation(item, vacancy, me, fullResume = {}) {
   if (!hhId || hhId.endsWith(":")) return null;
 
   const nameParts = [resume.last_name, resume.first_name, resume.middle_name].filter(Boolean);
-  const name = nameParts.join(" ") || resume.title || applicant.name || "РљР°РЅРґРёРґР°С‚ HH";
+  const name = nameParts.join(" ") || resume.title || applicant.name || "Р С™Р В°Р Р…Р Т‘Р С‘Р Т‘Р В°РЎвЂљ HH";
   const hhUrl = resume.alternate_url || item.alternate_url || item.url || `https://hh.ru/resume/${resume.id || ""}`;
   const owner = me.first_name || me.name || "HH";
   const contact = extractHhContact(resume) || "HH";
@@ -531,12 +532,12 @@ function mapHhNegotiation(item, vacancy, me, fullResume = {}) {
     name,
     contact,
     age: resume.age || "",
-    vacancy: vacancy.name || item.vacancy?.name || "Р’Р°РєР°РЅСЃРёСЏ HH",
+    vacancy: vacancy.name || item.vacancy?.name || "Р вЂ™Р В°Р С”Р В°Р Р…РЎРѓР С‘РЎРЏ HH",
     hhUrl,
-    status: "РќРѕРІС‹Р№",
+    status: "Р СњР С•Р Р†РЎвЂ№Р в„–",
     owner,
     tags: ["HH", item.state?.name || item.employer_state?.name || ""].filter(Boolean),
-    comment: "РРјРїРѕСЂС‚РёСЂРѕРІР°РЅРѕ РёР· HeadHunter. РџСЂРѕРІРµСЂСЊС‚Рµ РєР°СЂС‚РѕС‡РєСѓ Рё РЅР°Р·РЅР°С‡СЊС‚Рµ СЃС‚Р°С‚СѓСЃ.",
+    comment: "Р ВР СР С—Р С•РЎР‚РЎвЂљР С‘РЎР‚Р С•Р Р†Р В°Р Р…Р С• Р С‘Р В· HeadHunter. Р СџРЎР‚Р С•Р Р†Р ВµРЎР‚РЎРЉРЎвЂљР Вµ Р С”Р В°РЎР‚РЎвЂљР С•РЎвЂЎР С”РЎС“ Р С‘ Р Р…Р В°Р В·Р Р…Р В°РЎвЂЎРЎРЉРЎвЂљР Вµ РЎРѓРЎвЂљР В°РЎвЂљРЎС“РЎРѓ.",
     source: "hh",
   });
 }
@@ -550,7 +551,7 @@ function extractHhContact(resume) {
   const formatted = contacts.map((contact) => ({ contact, value: formatHhContact(contact) }));
   const phone = formatted.find(({ contact, value }) => {
     const type = String(contact?.type?.id || contact?.type?.name || "").toLowerCase();
-    return value && (type.includes("phone") || type.includes("С‚РµР»"));
+    return value && (type.includes("phone") || type.includes("РЎвЂљР ВµР В»"));
   });
 
   return phone?.value || formatted.find(({ value }) => value)?.value || "";
@@ -564,6 +565,205 @@ function formatHhContact(contact) {
   if (value.country || value.city || value.number) return [value.country, value.city, value.number].filter(Boolean).join(" ");
   if (value.email) return value.email;
   return "";
+}
+
+async function importAvitoApplications(options = {}) {
+  if (!AVITO_CLIENT_ID || !AVITO_CLIENT_SECRET) throw new Error("AVITO_CLIENT_ID and AVITO_CLIENT_SECRET are not configured");
+
+  const token = await refreshAvitoTokenIfNeeded();
+  const updatedAtFrom = String(options.updatedAtFrom || new Date().toISOString().slice(0, 10));
+  const ids = await getAvitoApplicationIds(token, updatedAtFrom);
+  const existingIds = new Set((await store.listCandidates()).map((candidate) => candidate.id));
+  let imported = 0;
+  let skipped = 0;
+
+  for (let index = 0; index < ids.length; index += 100) {
+    const batch = ids.slice(index, index + 100);
+    const applications = await getAvitoApplicationsByIds(token, batch);
+
+    for (const application of applications) {
+      const candidate = mapAvitoApplication(application);
+      if (!candidate) {
+        skipped += 1;
+        continue;
+      }
+      if (existingIds.has(candidate.id)) {
+        skipped += 1;
+        continue;
+      }
+
+      await store.upsertCandidate(candidate);
+      existingIds.add(candidate.id);
+      imported += 1;
+    }
+  }
+
+  await store.setSetting("avito_last_import_date", updatedAtFrom);
+  return { imported, skipped, found: ids.length, updatedAtFrom };
+}
+
+async function getAvitoApplicationIds(token, updatedAtFrom) {
+  const result = [];
+  let lastId = "";
+
+  for (let page = 0; page < 20; page += 1) {
+    const url = new URL(`${AVITO_API}/job/v1/applications/get_ids`);
+    url.searchParams.set("updatedAtFrom", updatedAtFrom);
+    url.searchParams.set("limit", "100");
+    if (lastId) url.searchParams.set("lastId", lastId);
+
+    const data = await avitoGet(url.toString(), token);
+    const items = Array.isArray(data) ? data : data.items || data.applications || data.ids || [];
+    const ids = items.map((item) => (typeof item === "string" ? item : item.id)).filter(Boolean);
+    result.push(...ids);
+    if (ids.length < 100) break;
+    lastId = ids[ids.length - 1];
+  }
+
+  return [...new Set(result)];
+}
+
+async function getAvitoApplicationsByIds(token, ids) {
+  if (!ids.length) return [];
+  const data = await avitoPost("/job/v1/applications/get_by_ids", token, { ids });
+  if (Array.isArray(data)) return data;
+  return data.applications || data.items || data.result || [];
+}
+
+function mapAvitoApplication(application) {
+  const id = String(application.id || application.uuid || application.application_id || "");
+  if (!id) return null;
+
+  const resume = application.resume || application.cv || application.applicant?.resume || {};
+  const applicant = application.applicant || application.candidate || application.user || {};
+  const vacancy = application.vacancy || application.item || application.job || {};
+  const name = firstString(
+    applicant.name,
+    application.name,
+    [applicant.last_name, applicant.first_name, applicant.middle_name].filter(Boolean).join(" "),
+    [resume.last_name, resume.first_name, resume.middle_name].filter(Boolean).join(" "),
+    resume.title,
+    "РљР°РЅРґРёРґР°С‚ РђРІРёС‚Рѕ",
+  );
+  const contact = firstString(findDeepValue(application, ["phone", "tel", "contact_phone"]), findDeepValue(application, ["email"]), "РђРІРёС‚Рѕ");
+  const vacancyName = firstString(vacancy.name, vacancy.title, vacancy.profession, application.vacancy_name, application.item_title, "Р’Р°РєР°РЅСЃРёСЏ РђРІРёС‚Рѕ");
+  const avitoUrl = firstString(application.url, application.alternate_url, vacancy.url, resume.url, `https://www.avito.ru/`);
+
+  return normalizeCandidate({
+    id: `avito:${id}`,
+    hhId: id,
+    name,
+    contact,
+    age: firstString(applicant.age, resume.age, application.age),
+    vacancy: vacancyName,
+    hhUrl: avitoUrl,
+    status: "РќРѕРІС‹Р№",
+    owner: "РђРІРёС‚Рѕ",
+    tags: ["РђРІРёС‚Рѕ", firstString(application.status, application.state)].filter(Boolean),
+    comment: "РРјРїРѕСЂС‚РёСЂРѕРІР°РЅРѕ РёР· РђРІРёС‚Рѕ. РџСЂРѕРІРµСЂСЊС‚Рµ РєР°СЂС‚РѕС‡РєСѓ Рё РЅР°Р·РЅР°С‡СЊС‚Рµ СЃС‚Р°С‚СѓСЃ.",
+    source: "avito",
+  });
+}
+
+async function refreshAvitoTokenIfNeeded() {
+  const expiresAt = Number((await store.getSetting("avito_expires_at")) || 0);
+  if (Date.now() < expiresAt - 60_000) return store.getSetting("avito_access_token");
+
+  const body = new URLSearchParams();
+  body.set("grant_type", "client_credentials");
+  body.set("client_id", AVITO_CLIENT_ID);
+  body.set("client_secret", AVITO_CLIENT_SECRET);
+
+  const token = await avitoTokenRequest(body);
+  await storeAvitoToken(token);
+  return token.access_token;
+}
+
+async function avitoTokenRequest(body) {
+  const response = await fetch(`${AVITO_API}/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error_description || data.message || data.error || "Avito token request failed");
+  return data;
+}
+
+async function storeAvitoToken(token) {
+  await store.setSetting("avito_access_token", token.access_token || "");
+  await store.setSetting("avito_expires_at", String(Date.now() + Number(token.expires_in || 3600) * 1000));
+}
+
+async function avitoGet(pathnameOrUrl, token) {
+  const url = pathnameOrUrl.startsWith("http") ? pathnameOrUrl : `${AVITO_API}${pathnameOrUrl}`;
+  const response = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "HR Reserve app",
+    },
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error_description || data.error || `Avito request failed: ${response.status}`);
+  return data;
+}
+
+async function avitoPost(pathnameOrUrl, token, payload) {
+  const url = pathnameOrUrl.startsWith("http") ? pathnameOrUrl : `${AVITO_API}${pathnameOrUrl}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      "User-Agent": "HR Reserve app",
+    },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.message || data.error_description || data.error || `Avito request failed: ${response.status}`);
+  return data;
+}
+
+function firstString(...values) {
+  for (const value of values) {
+    if (value === null || value === undefined) continue;
+    const text = String(value).trim();
+    if (text) return text;
+  }
+  return "";
+}
+
+function findDeepValue(value, keys, seen = new Set()) {
+  if (!value || typeof value !== "object" || seen.has(value)) return "";
+  seen.add(value);
+
+  for (const key of Object.keys(value)) {
+    if (keys.includes(key.toLowerCase())) {
+      const result = formatDeepValue(value[key]);
+      if (result) return result;
+    }
+  }
+
+  for (const child of Object.values(value)) {
+    if (Array.isArray(child)) {
+      for (const item of child) {
+        const result = findDeepValue(item, keys, seen);
+        if (result) return result;
+      }
+      continue;
+    }
+    const result = findDeepValue(child, keys, seen);
+    if (result) return result;
+  }
+
+  return "";
+}
+
+function formatDeepValue(value) {
+  if (value === null || value === undefined) return "";
+  if (typeof value === "string" || typeof value === "number") return String(value).trim();
+  if (typeof value !== "object") return "";
+  return firstString(value.formatted, value.value, value.phone, value.number, value.email);
 }
 
 async function refreshHhTokenIfNeeded() {
@@ -645,7 +845,7 @@ function serveLogin(res) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Р’С…РѕРґ - HR Reserve</title>
+    <title>Р вЂ™РЎвЂ¦Р С•Р Т‘ - HR Reserve</title>
     <style>
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f6f6f7; color: #171b22; font-family: "Segoe UI", Arial, sans-serif; }
       form { width: min(380px, calc(100vw - 32px)); display: grid; gap: 14px; padding: 24px; background: #fff; border: 1px solid #dfe2e8; border-radius: 8px; box-shadow: 0 18px 50px rgba(23, 27, 34, 0.08); }
@@ -659,9 +859,9 @@ function serveLogin(res) {
   <body>
     <form method="post" action="/login">
       <h1>HR Reserve</h1>
-      <p>Р’РІРµРґРёС‚Рµ РѕР±С‰РёР№ РїР°СЂРѕР»СЊ HR-РєРѕРјР°РЅРґС‹.</p>
-      <input name="password" type="password" placeholder="РџР°СЂРѕР»СЊ" autofocus required />
-      <button>Р’РѕР№С‚Рё</button>
+      <p>Р вЂ™Р Р†Р ВµР Т‘Р С‘РЎвЂљР Вµ Р С•Р В±РЎвЂ°Р С‘Р в„– Р С—Р В°РЎР‚Р С•Р В»РЎРЉ HR-Р С”Р С•Р СР В°Р Р…Р Т‘РЎвЂ№.</p>
+      <input name="password" type="password" placeholder="Р СџР В°РЎР‚Р С•Р В»РЎРЉ" autofocus required />
+      <button>Р вЂ™Р С•Р в„–РЎвЂљР С‘</button>
     </form>
   </body>
 </html>`);

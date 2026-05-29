@@ -233,13 +233,20 @@ function showAvitoInstructions() {
 
 async function importAvito() {
   els.avitoStatusText.textContent = "Проверяем импорт Авито...";
+  els.avitoImportButton.disabled = true;
 
   try {
     const response = await fetch("/api/avito/import", { method: "POST" });
     const result = await response.json();
-    els.avitoStatusText.textContent = result.message || "Импорт Авито пока не настроен.";
-  } catch {
-    els.avitoStatusText.textContent = "Импорт Авито пока не настроен.";
+    if (!response.ok) throw new Error(result.message || result.error || "Импорт Авито не удался");
+
+    candidates = await loadCandidates();
+    render();
+    els.avitoStatusText.textContent = `Импорт Авито: ${result.imported} новых откликов, найдено: ${result.found}.`;
+  } catch (error) {
+    els.avitoStatusText.textContent = error.message || "Импорт Авито пока не настроен.";
+  } finally {
+    await refreshAvitoStatus();
   }
 }
 
