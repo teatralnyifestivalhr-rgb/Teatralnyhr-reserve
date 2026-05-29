@@ -83,7 +83,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/avito/import" && req.method === "POST") {
       return json(res, 501, {
         error: "not_implemented",
-        message: "Импорт Авито заложен, но для подключения нужны ключи и подтвержденный доступ к API Авито Работа.",
+        message: "РРјРїРѕСЂС‚ РђРІРёС‚Рѕ Р·Р°Р»РѕР¶РµРЅ, РЅРѕ РґР»СЏ РїРѕРґРєР»СЋС‡РµРЅРёСЏ РЅСѓР¶РЅС‹ РєР»СЋС‡Рё Рё РїРѕРґС‚РІРµСЂР¶РґРµРЅРЅС‹Р№ РґРѕСЃС‚СѓРї Рє API РђРІРёС‚Рѕ Р Р°Р±РѕС‚Р°.",
       });
     }
 
@@ -269,7 +269,7 @@ function normalizeCandidate(candidate) {
     age: String(candidate.age || "").trim(),
     vacancy: String(candidate.vacancy || "").trim(),
     hhUrl: String(candidate.hhUrl || "").trim(),
-    status: String(candidate.status || "Новый").trim(),
+    status: String(candidate.status || "РќРѕРІС‹Р№").trim(),
     followup: String(candidate.followup || "").trim(),
     owner: String(candidate.owner || "").trim(),
     tags: Array.isArray(candidate.tags) ? candidate.tags.map(String).map((tag) => tag.trim()).filter(Boolean) : [],
@@ -284,30 +284,30 @@ function demoCandidates() {
   return [
     normalizeCandidate({
       id: crypto.randomUUID(),
-      name: "Анна Кузнецова",
+      name: "РђРЅРЅР° РљСѓР·РЅРµС†РѕРІР°",
       contact: "+7 900 000-00-11",
       age: "20",
-      vacancy: "Администратор",
+      vacancy: "РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ",
       hhUrl: "https://hh.ru/",
-      status: "Резерв лето",
+      status: "Р РµР·РµСЂРІ Р»РµС‚Рѕ",
       followup: "2026-05-20",
-      owner: "Мария",
-      tags: ["лето", "вечерние смены"],
-      comment: "Готова выйти после сессии. Хорошая коммуникация, стоит вернуться ближе к июню.",
+      owner: "РњР°СЂРёСЏ",
+      tags: ["Р»РµС‚Рѕ", "РІРµС‡РµСЂРЅРёРµ СЃРјРµРЅС‹"],
+      comment: "Р“РѕС‚РѕРІР° РІС‹Р№С‚Рё РїРѕСЃР»Рµ СЃРµСЃСЃРёРё. РҐРѕСЂРѕС€Р°СЏ РєРѕРјРјСѓРЅРёРєР°С†РёСЏ, СЃС‚РѕРёС‚ РІРµСЂРЅСѓС‚СЊСЃСЏ Р±Р»РёР¶Рµ Рє РёСЋРЅСЋ.",
       source: "demo",
     }),
     normalizeCandidate({
       id: crypto.randomUUID(),
-      name: "Илья Соколов",
+      name: "РР»СЊСЏ РЎРѕРєРѕР»РѕРІ",
       contact: "@ilya_s",
       age: "27",
-      vacancy: "Менеджер по продажам",
+      vacancy: "РњРµРЅРµРґР¶РµСЂ РїРѕ РїСЂРѕРґР°Р¶Р°Рј",
       hhUrl: "https://hh.ru/",
-      status: "Собеседование",
+      status: "РЎРѕР±РµСЃРµРґРѕРІР°РЅРёРµ",
       followup: "2026-05-06",
-      owner: "Ольга",
-      tags: ["опыт продаж", "срочно"],
-      comment: "Назначено первичное интервью, уточнить детали по графику.",
+      owner: "РћР»СЊРіР°",
+      tags: ["РѕРїС‹С‚ РїСЂРѕРґР°Р¶", "СЃСЂРѕС‡РЅРѕ"],
+      comment: "РќР°Р·РЅР°С‡РµРЅРѕ РїРµСЂРІРёС‡РЅРѕРµ РёРЅС‚РµСЂРІСЊСЋ, СѓС‚РѕС‡РЅРёС‚СЊ РґРµС‚Р°Р»Рё РїРѕ РіСЂР°С„РёРєСѓ.",
       source: "demo",
     }),
   ];
@@ -336,7 +336,7 @@ async function createHhAuthUrl() {
   if (!HH_CLIENT_ID || !HH_CLIENT_SECRET) {
     return {
       error: "missing_credentials",
-      message: "Добавьте HH_CLIENT_ID и HH_CLIENT_SECRET в окружение сервера.",
+      message: "Р”РѕР±Р°РІСЊС‚Рµ HH_CLIENT_ID Рё HH_CLIENT_SECRET РІ РѕРєСЂСѓР¶РµРЅРёРµ СЃРµСЂРІРµСЂР°.",
       redirectUri: HH_REDIRECT_URI,
     };
   }
@@ -477,8 +477,9 @@ async function getHhCollectionItems(collectionUrl, token, options = {}) {
 }
 function isResponseHhCollection(collection) {
   const text = [collection.id, collection.name].filter(Boolean).join(" ").toLowerCase();
-  return text.includes("response") || text.includes("отклик");
+  return text.includes("response");
 }
+
 
 function isImportableHhNegotiation(item, collection) {
   const stateText = [
@@ -494,11 +495,11 @@ function isImportableHhNegotiation(item, collection) {
     collection.name,
   ].filter(Boolean).join(" ").toLowerCase();
 
-  if (stateText.includes("discard") || stateText.includes("reject") || stateText.includes("archive") || stateText.includes("отказ") || stateText.includes("архив")) {
+  if (stateText.includes("discard") || stateText.includes("reject") || stateText.includes("archive") || stateText.includes("РѕС‚РєР°Р·") || stateText.includes("Р°СЂС…РёРІ")) {
     return false;
   }
 
-  return stateText.includes("response") || stateText.includes("отклик");
+  return stateText.includes("response") || stateText.includes("РѕС‚РєР»РёРє");
 }
 async function getHhResumeDetails(item, token) {
   const resume = item.resume || item.resumes?.[0] || {};
@@ -519,7 +520,7 @@ function mapHhNegotiation(item, vacancy, me, fullResume = {}) {
   if (!hhId || hhId.endsWith(":")) return null;
 
   const nameParts = [resume.last_name, resume.first_name, resume.middle_name].filter(Boolean);
-  const name = nameParts.join(" ") || resume.title || applicant.name || "Кандидат HH";
+  const name = nameParts.join(" ") || resume.title || applicant.name || "РљР°РЅРґРёРґР°С‚ HH";
   const hhUrl = resume.alternate_url || item.alternate_url || item.url || `https://hh.ru/resume/${resume.id || ""}`;
   const owner = me.first_name || me.name || "HH";
   const contact = extractHhContact(resume) || "HH";
@@ -530,12 +531,12 @@ function mapHhNegotiation(item, vacancy, me, fullResume = {}) {
     name,
     contact,
     age: resume.age || "",
-    vacancy: vacancy.name || item.vacancy?.name || "Вакансия HH",
+    vacancy: vacancy.name || item.vacancy?.name || "Р’Р°РєР°РЅСЃРёСЏ HH",
     hhUrl,
-    status: "Новый",
+    status: "РќРѕРІС‹Р№",
     owner,
     tags: ["HH", item.state?.name || item.employer_state?.name || ""].filter(Boolean),
-    comment: "Импортировано из HeadHunter. Проверьте карточку и назначьте статус.",
+    comment: "РРјРїРѕСЂС‚РёСЂРѕРІР°РЅРѕ РёР· HeadHunter. РџСЂРѕРІРµСЂСЊС‚Рµ РєР°СЂС‚РѕС‡РєСѓ Рё РЅР°Р·РЅР°С‡СЊС‚Рµ СЃС‚Р°С‚СѓСЃ.",
     source: "hh",
   });
 }
@@ -549,7 +550,7 @@ function extractHhContact(resume) {
   const formatted = contacts.map((contact) => ({ contact, value: formatHhContact(contact) }));
   const phone = formatted.find(({ contact, value }) => {
     const type = String(contact?.type?.id || contact?.type?.name || "").toLowerCase();
-    return value && (type.includes("phone") || type.includes("тел"));
+    return value && (type.includes("phone") || type.includes("С‚РµР»"));
   });
 
   return phone?.value || formatted.find(({ value }) => value)?.value || "";
@@ -644,7 +645,7 @@ function serveLogin(res) {
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Вход - HR Reserve</title>
+    <title>Р’С…РѕРґ - HR Reserve</title>
     <style>
       body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #f6f6f7; color: #171b22; font-family: "Segoe UI", Arial, sans-serif; }
       form { width: min(380px, calc(100vw - 32px)); display: grid; gap: 14px; padding: 24px; background: #fff; border: 1px solid #dfe2e8; border-radius: 8px; box-shadow: 0 18px 50px rgba(23, 27, 34, 0.08); }
@@ -658,9 +659,9 @@ function serveLogin(res) {
   <body>
     <form method="post" action="/login">
       <h1>HR Reserve</h1>
-      <p>Введите общий пароль HR-команды.</p>
-      <input name="password" type="password" placeholder="Пароль" autofocus required />
-      <button>Войти</button>
+      <p>Р’РІРµРґРёС‚Рµ РѕР±С‰РёР№ РїР°СЂРѕР»СЊ HR-РєРѕРјР°РЅРґС‹.</p>
+      <input name="password" type="password" placeholder="РџР°СЂРѕР»СЊ" autofocus required />
+      <button>Р’РѕР№С‚Рё</button>
     </form>
   </body>
 </html>`);
