@@ -384,17 +384,20 @@ async function importHhNegotiations() {
   if (!employerId) throw new Error("HH employer id was not found for the authorized user");
 
   const vacancies = await getHhActiveVacancies(employerId, token);
+  const vacanciesWithUnread = vacancies.filter((vacancy) => Number(vacancy.counters?.unread_responses || 0) > 0);
   const existingIds = new Set((await store.listCandidates()).map((candidate) => candidate.id));
   let imported = 0;
   let skipped = 0;
   let collectionsFound = 0;
   let itemsFound = 0;
 
-  for (const vacancy of vacancies) {
+  for (const vacancy of vacanciesWithUnread) {
     const collections = await getHhNegotiationCollections(vacancy.id, token);
     collectionsFound += collections.length;
     for (const collection of collections) {
-      const items = await getHhCollectionItems(collection.url, token);
+      if (!isResponseHhCollection(collection)) continue;
+      
+const items = await getHhCollectionItems(collection.url, token, { onlyUpdates: true });
       itemsFound += items.length;
       for (const item of items) {
         if (!isImportableHhNegotiation(item, collection)) {
@@ -419,7 +422,7 @@ async function importHhNegotiations() {
     }
   }
 
-  return { imported, skipped, vacancies: vacancies.length, collections: collectionsFound, found: itemsFound };
+  return { imported, skipped, vacancies: vacancies.length, unreadVacancies: vacanciesWithUnread.length, collections: collectionsFound, found: itemsFound };
 }
 
 async function getHhActiveVacancies(employerId, token) {
@@ -454,7 +457,7 @@ async function getHhNegotiationCollections(vacancyId, token) {
   return result;
 }
 
-async function getHhCollectionItems(collectionUrl, token) {
+async function getHhCollectionItems(collectionUrl, token, options = {}) {
   const result = [];
   let page = 0;
   let pages = 1;
@@ -463,6 +466,7 @@ async function getHhCollectionItems(collectionUrl, token) {
     const url = new URL(collectionUrl);
     url.searchParams.set("per_page", "50");
     url.searchParams.set("page", String(page));
+    if (options.onlyUpdates) url.searchParams.set("has_updates", "true");
     const data = await hhGet(url.toString(), token);
     result.push(...(data.items || []));
     pages = Number(data.pages || 1);
@@ -471,7 +475,31 @@ async function getHhCollectionItems(collectionUrl, token) {
 
   return result;
 }
+function isResponseHhCollection(collection) {
+  const text = [collection.id, collection.name].filter(Boolean).join(" ").toLowerCase();
+  return text.includes("response") || text.includes("отклик");
+}
 
+function isImportableHhNegotiation(item, collection) {
+  const stateText = [
+    item.employer_state?.id,
+    item.employer_state?.name,
+    item.state?.id,
+    item.state?.name,
+    item.negotiation_status?.id,
+    item.negotiation_status?.name,
+    item.status?.id,
+    item.status?.name,
+    collection.id,
+    collection.name,
+  ].filter(Boolean).join(" ").toLowerCase();
+
+  if (stateText.includes("discard") || stateText.includes("reject") || stateText.includes("archive") || stateText.includes("отказ") || stateText.includes("архив")) {
+    return false;
+  }
+
+  return stateText.includes("response") || stateText.includes("отклик");
+}
 async function getHhResumeDetails(item, token) {
   const resume = item.resume || item.resumes?.[0] || {};
   if (!resume.id) return resume;
