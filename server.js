@@ -397,14 +397,18 @@ async function importHhNegotiations() {
   let itemsFound = 0;
 
   for (const vacancy of vacanciesWithUnread) {
+    const unreadLimit = Number(vacancy.counters?.unread_responses || 0);
+    let importedForVacancy = 0;
     const collections = await getHhNegotiationCollections(vacancy.id, token);
     collectionsFound += collections.length;
     for (const collection of collections) {
       if (!isResponseHhCollection(collection)) continue;
+      if (importedForVacancy >= unreadLimit) break;
 
       const items = await getHhCollectionItems(collection.url, token, { onlyUpdates: true });
       itemsFound += items.length;
       for (const item of items) {
+        if (importedForVacancy >= unreadLimit) break;
         if (!isImportableHhNegotiation(item, collection)) {
           skipped += 1;
           continue;
@@ -423,6 +427,7 @@ async function importHhNegotiations() {
         await store.upsertCandidate(candidate);
         existingIds.add(candidate.id);
         imported += 1;
+        importedForVacancy += 1;
       }
     }
   }
