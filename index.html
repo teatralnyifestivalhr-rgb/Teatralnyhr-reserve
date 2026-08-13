@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Оценка собеседования</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #fff4bf;
+        --surface: #ffffff;
+        --surface-soft: #fff7d6;
+        --text: #25210f;
+        --muted: #746a42;
+        --line: #eadb91;
+        --accent: #b7791f;
+        --accent-dark: #7c4f12;
+        --accent-soft: #ffec99;
+        --warning: #c65d21;
+        --danger: #b42318;
+        --shadow: 0 18px 48px rgba(32, 49, 54, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        background:
+          radial-gradient(circle at top left, rgba(255, 214, 77, 0.55), transparent 34rem),
+          linear-gradient(180deg, #fff9d7 0%, var(--bg) 38%, #ffe680 100%);
+        color: var(--text);
+        font-family:
+          Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      button,
+      input,
+      select,
+      textarea {
+        font: inherit;
+      }
+
+      .page {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 32px 0 48px;
+      }
+
+      .top {
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr);
+        gap: 28px;
+        align-items: end;
+        margin-bottom: 24px;
+      }
+
+      .hero {
+        padding: 28px 0 12px;
+      }
+
+      .eyebrow {
+        margin: 0 0 10px;
+        color: var(--accent);
+        font-size: 13px;
+        font-weight: 800;
+        letter-spacing: 0;
+        text-transform: uppercase;
+      }
+
+      h1 {
+        max-width: 820px;
+        margin: 0;
+        font-size: clamp(34px, 7vw, 70px);
+        line-height: 0.95;
+        letter-spacing: 0;
+      }
+
+      .lead {
+        max-width: 650px;
+        margin: 18px 0 0;
+        color: var(--muted);
+        font-size: 18px;
+        line-height: 1.55;
+      }
+
+      .privacy-note {
+        padding: 18px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: var(--shadow);
+      }
+
+      .privacy-note strong {
+        display: block;
+        margin-bottom: 8px;
+      }
+
+      .privacy-note p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .layout {
+        width: min(860px, 100%);
+        margin: 0 auto;
+      }
+
+      form,
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--surface);
+        box-shadow: var(--shadow);
+      }
+
+      form {
+        overflow: hidden;
+      }
+
+      .section {
+        padding: 24px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .section:last-child {
+        border-bottom: 0;
+      }
+
+      .section-title {
+        display: flex;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 18px;
+      }
+
+      .step {
+        display: grid;
+        flex: 0 0 auto;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-size: 14px;
+        font-weight: 800;
+      }
+
+      h2,
+      h3 {
+        margin: 0;
+        letter-spacing: 0;
+      }
+
+      h2 {
+        font-size: 22px;
+      }
+
+      h3 {
+        font-size: 18px;
+      }
+
+      .hint {
+        margin: 6px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .fields {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 16px;
+      }
+
+      label {
+        display: grid;
+        gap: 7px;
+        color: var(--text);
+        font-weight: 700;
+      }
+
+      label span {
+        font-size: 14px;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfd;
+        color: var(--text);
+        padding: 12px 13px;
+        outline: none;
+        transition:
+          border-color 0.18s ease,
+          box-shadow 0.18s ease,
+          background 0.18s ease;
+      }
+
+      textarea {
+        min-height: 116px;
+        resize: vertical;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        background: #ffffff;
+        box-shadow: 0 0 0 4px rgba(183, 121, 31, 0.18);
+      }
+
+      .ratings {
+        display: grid;
+        gap: 14px;
+      }
+
+      .rating-row {
+        display: grid;
+        grid-template-columns: minmax(210px, 1fr) minmax(245px, 0.95fr);
+        gap: 18px;
+        align-items: center;
+        padding: 16px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfcfd;
+      }
+
+      .rating-row p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .scale {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 8px;
+      }
+
+      .scale input {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .scale span {
+        display: grid;
+        min-height: 42px;
+        place-items: center;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #ffffff;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 800;
+        transition:
+          transform 0.18s ease,
+          border-color 0.18s ease,
+          color 0.18s ease,
+          background 0.18s ease;
+      }
+
+      .scale label {
+        display: block;
+      }
+
+      .scale input:checked + span {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .scale label:hover span {
+        transform: translateY(-1px);
+        border-color: var(--accent);
+      }
+
+      .range-caption {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .chip input {
+        position: absolute;
+        inline-size: 1px;
+        block-size: 1px;
+        overflow: hidden;
+        clip: rect(0 0 0 0);
+      }
+
+      .chip span {
+        display: inline-flex;
+        align-items: center;
+        min-height: 38px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #ffffff;
+        padding: 8px 13px;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 700;
+      }
+
+      .chip input:checked + span {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 46px;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 11px 18px;
+        cursor: pointer;
+        font-weight: 800;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #ffffff;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-dark);
+      }
+
+      .btn-secondary {
+        border-color: var(--line);
+        background: #ffffff;
+        color: var(--text);
+      }
+
+      .status {
+        min-height: 24px;
+        color: var(--accent-dark);
+        font-weight: 700;
+      }
+
+      .panel {
+        padding: 20px;
+      }
+
+      .score {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .score strong {
+        font-size: 44px;
+        line-height: 1;
+      }
+
+      .score span {
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      .mini {
+        margin: 12px 0 0;
+        color: var(--muted);
+        line-height: 1.45;
+      }
+
+      .bars {
+        display: grid;
+        gap: 13px;
+        margin-top: 18px;
+      }
+
+      .bar-row {
+        display: grid;
+        gap: 6px;
+      }
+
+      .bar-label {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        font-size: 13px;
+        font-weight: 800;
+      }
+
+      .bar-track {
+        height: 10px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e9eef0;
+      }
+
+      .bar-fill {
+        height: 100%;
+        width: 0%;
+        border-radius: inherit;
+        background: var(--accent);
+        transition: width 0.25s ease;
+      }
+
+      .bar-fill.low {
+        background: var(--danger);
+      }
+
+      .bar-fill.mid {
+        background: var(--warning);
+      }
+
+      .weak-list {
+        display: grid;
+        gap: 8px;
+        margin: 14px 0 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .weak-list li {
+        border-radius: 8px;
+        background: var(--surface-soft);
+        padding: 10px 12px;
+        color: var(--accent-dark);
+        font-weight: 700;
+      }
+
+      .admin-actions {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .admin-actions .btn {
+        padding-inline: 10px;
+      }
+
+      .thanks {
+        display: none;
+        padding: 20px;
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        background: var(--accent-soft);
+        color: var(--accent-dark);
+        font-weight: 800;
+      }
+
+      .thanks.show {
+        display: block;
+      }
+
+      @media (max-width: 920px) {
+        .top,
+        .rating-row {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        .page {
+          width: min(100% - 20px, 1180px);
+          padding-top: 18px;
+        }
+
+        .fields,
+        .admin-actions {
+          grid-template-columns: 1fr;
+        }
+
+        .section {
+          padding: 18px;
+        }
+
+        .scale {
+          gap: 6px;
+        }
+
+        .scale span {
+          min-height: 39px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="top">
+        <div class="hero">
+          <p class="eyebrow">Обратная связь после интервью</p>
+          <h1>Оцените, как прошло собеседование</h1>
+          <p class="lead">
+            Это короткая анкета на 3 минуты. Ответы помогут улучшить процесс найма:
+            убрать лишнее ожидание, сделать вопросы понятнее и точнее давать обратную связь.
+          </p>
+        </div>
+
+        <aside class="privacy-note" aria-label="Приватность">
+          <strong>Отвечайте, пожалуйста, честно</strong>
+          <p>
+            Анкета не влияет на решение по вакансии. Важны конкретные впечатления:
+            что помогло раскрыться, а что мешало.
+          </p>
+        </aside>
+      </header>
+
+      <main class="layout">
+        <form id="feedbackForm">
+          <section class="section">
+            <div class="section-title">
+              <span class="step">1</span>
+              <div>
+                <h2>Контекст</h2>
+                <p class="hint">Эти поля помогают сопоставлять оценки по вакансиям и этапам.</p>
+              </div>
+            </div>
+
+            <div class="fields">
+              <label>
+                <span>Вакансия</span>
+                <input name="role" type="text" placeholder="Например: менеджер по продажам" />
+              </label>
+              <label>
+                <span>Этап</span>
+                <select name="stage">
+                  <option value="Первичный звонок">Первичный звонок</option>
+                  <option value="HR-интервью">HR-интервью</option>
+                  <option value="Интервью с руководителем">Интервью с руководителем</option>
+                  <option value="Тестовое задание">Тестовое задание</option>
+                  <option value="Финальное интервью">Финальное интервью</option>
+                </select>
+              </label>
+              <label>
+                <span>Дата собеседования</span>
+                <input name="date" type="date" />
+              </label>
+              <label>
+                <span>Имя интервьюера, если помните</span>
+                <input name="interviewer" type="text" placeholder="Можно оставить пустым" />
+              </label>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <span class="step">2</span>
+              <div>
+                <h2>Оценки</h2>
+                <p class="hint">1 - совсем не согласен, 5 - полностью согласен.</p>
+              </div>
+            </div>
+
+            <div class="ratings" id="ratings"></div>
+          </section>
+
+          <section class="section">
+            <div class="section-title">
+              <span class="step">3</span>
+              <div>
+                <h2>Что можно улучшить</h2>
+                <p class="hint">Выберите один или несколько пунктов, где процесс можно сделать сильнее.</p>
+              </div>
+            </div>
+
+            <div class="chips" id="issues"></div>
+          </section>
+
+          <section class="section">
+            <div class="fields">
+              <label>
+                <span>Что было хорошо?</span>
+                <textarea name="positive" placeholder="Например: интервьюер подробно рассказал о задачах"></textarea>
+              </label>
+              <label>
+                <span>Что стоит изменить?</span>
+                <textarea name="improve" placeholder="Например: заранее прислать план встречи"></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="section">
+            <div class="actions">
+              <button class="btn btn-primary" type="submit">Отправить оценку</button>
+              <button class="btn btn-secondary" type="button" id="copyButton">Скопировать ответ</button>
+              <button class="btn btn-secondary" type="button" id="mailButton">Отправить по email</button>
+            </div>
+            <p class="status" id="status" role="status" aria-live="polite"></p>
+          </section>
+        </form>
+
+      </main>
+    </div>
+
+    <script>
+      const ratingQuestions = [
+        {
+          key: "clarity",
+          title: "Цель встречи была понятна",
+          hint: "Было ясно, что будут обсуждать и зачем нужен этот этап."
+        },
+        {
+          key: "respect",
+          title: "Со мной общались уважительно",
+          hint: "Тон, вопросы и обратная связь были корректными."
+        },
+        {
+          key: "structure",
+          title: "Интервью было хорошо структурировано",
+          hint: "Встреча не выглядела хаотичной, этапы были логичными."
+        },
+        {
+          key: "relevance",
+          title: "Вопросы помогли понять работу",
+          hint: "Спрашивали о том, что связано с задачами, обучением и ожиданиями на стажировке."
+        },
+        {
+          key: "roleInfo",
+          title: "Мне понятно рассказали о роли",
+          hint: "Задачи, ожидания, команда и условия стали понятнее."
+        },
+        {
+          key: "timing",
+          title: "Время было организовано удобно",
+          hint: "Не было лишнего ожидания, встреча началась и закончилась адекватно."
+        },
+        {
+          key: "feedback",
+          title: "Условия стажировки были понятны",
+          hint: "Мне понятно объяснили формат стажировки, график, обучение и дальнейшие этапы."
+        },
+        {
+          key: "recommend",
+          title: "Я бы рекомендовал процесс другим кандидатам",
+          hint: "Общее впечатление от собеседования и коммуникации."
+        }
+      ];
+
+      const issueOptions = [
+        "Долгое ожидание",
+        "Неясные следующие шаги",
+        "Мало информации о вакансии",
+        "Слишком общие вопросы",
+        "Сложно раскрыть опыт",
+        "Технические проблемы",
+        "Неудобное время",
+        "Не хватило обратной связи"
+      ];
+
+      const form = document.querySelector("#feedbackForm");
+      const ratingsEl = document.querySelector("#ratings");
+      const issuesEl = document.querySelector("#issues");
+      const statusEl = document.querySelector("#status");
+      const copyButton = document.querySelector("#copyButton");
+      const mailButton = document.querySelector("#mailButton");
+      const storageKey = "interview-feedback-responses";
+      const googleSheetConfig = {
+        appsScriptUrl: ""
+      };
+      const googleFormConfig = {
+        formResponseUrl: "https://docs.google.com/forms/d/e/1FAIpQLSc8mtIC1aGV97_OPFaNcBlb9skORgwGS-0EZdPXnfZ0IBrNxA/formResponse",
+        entries: {
+          role: "entry.1079782102",
+          stage: "entry.528196430",
+          date: {
+            year: "entry.2041645548_year",
+            month: "entry.2041645548_month",
+            day: "entry.2041645548_day"
+          },
+          interviewer: "entry.1223243144",
+          clarity: "entry.1544172791",
+          respect: "entry.1773084320",
+          structure: "entry.602882291",
+          relevance: "entry.54945361",
+          roleInfo: "entry.1164484941",
+          timing: "entry.1937248463",
+          feedback: "entry.388560082",
+          recommend: "entry.427688947",
+          issues: "entry.1365560417",
+          positive: "entry.832810809",
+          improve: "entry.763653152"
+        }
+      };
+
+      function renderRatings() {
+        ratingsEl.innerHTML = ratingQuestions
+          .map((question) => {
+            const options = [1, 2, 3, 4, 5]
+              .map(
+                (score) => `
+                  <label>
+                    <input type="radio" name="${question.key}" value="${score}" required />
+                    <span>${score}</span>
+                  </label>
+                `
+              )
+              .join("");
+
+            return `
+              <div class="rating-row">
+                <div>
+                  <strong>${question.title}</strong>
+                  <p>${question.hint}</p>
+                </div>
+                <div>
+                  <div class="scale" role="radiogroup" aria-label="${question.title}">
+                    ${options}
+                  </div>
+                  <div class="range-caption">
+                    <span>1 - низко</span>
+                    <span>5 - отлично</span>
+                  </div>
+                </div>
+              </div>
+            `;
+          })
+          .join("");
+      }
+
+      function renderIssues() {
+        issuesEl.innerHTML = issueOptions
+          .map(
+            (issue) => `
+              <label class="chip">
+                <input type="checkbox" name="issues" value="${issue}" />
+                <span>${issue}</span>
+              </label>
+            `
+          )
+          .join("");
+      }
+
+      function getResponses() {
+        try {
+          return JSON.parse(localStorage.getItem(storageKey)) || [];
+        } catch {
+          return [];
+        }
+      }
+
+      function saveResponses(responses) {
+        localStorage.setItem(storageKey, JSON.stringify(responses));
+      }
+
+      function isGoogleFormsConnected() {
+        const hasEntry = (entry) => {
+          if (typeof entry === "string") {
+            return entry.startsWith("entry.");
+          }
+
+          return entry && Object.values(entry).some((value) => value.startsWith("entry."));
+        };
+
+        return Boolean(
+          googleFormConfig.formResponseUrl &&
+            Object.values(googleFormConfig.entries).some(hasEntry)
+        );
+      }
+
+      function isGoogleSheetConnected() {
+        return Boolean(googleSheetConfig.appsScriptUrl);
+      }
+
+      function readForm() {
+        const data = new FormData(form);
+        const ratings = {};
+
+        ratingQuestions.forEach((question) => {
+          ratings[question.key] = Number(data.get(question.key));
+        });
+
+        return {
+          createdAt: new Date().toISOString(),
+          role: data.get("role").trim(),
+          stage: data.get("stage"),
+          date: data.get("date"),
+          interviewer: data.get("interviewer").trim(),
+          ratings,
+          issues: data.getAll("issues"),
+          positive: data.get("positive").trim(),
+          improve: data.get("improve").trim()
+        };
+      }
+
+      function formatResponse(response) {
+        const lines = [
+          "Оценка собеседования",
+          `Вакансия: ${response.role || "не указана"}`,
+          `Этап: ${response.stage}`,
+          `Дата: ${response.date || "не указана"}`,
+          `Интервьюер: ${response.interviewer || "не указан"}`,
+          "",
+          "Оценки:"
+        ];
+
+        ratingQuestions.forEach((question) => {
+          lines.push(`${question.title}: ${response.ratings[question.key]}/5`);
+        });
+
+        lines.push("");
+        lines.push(`Зоны улучшения: ${response.issues.join(", ") || "не выбраны"}`);
+        lines.push(`Что было хорошо: ${response.positive || "нет комментария"}`);
+        lines.push(`Что изменить: ${response.improve || "нет комментария"}`);
+
+        return lines.join("\n");
+      }
+
+      function updateMailLink() {
+        let response;
+
+        try {
+          response = readForm();
+        } catch {
+          return;
+        }
+
+        const subject = encodeURIComponent("Оценка собеседования от кандидата");
+        const body = encodeURIComponent(formatResponse(response));
+        mailButton.dataset.href = `mailto:?subject=${subject}&body=${body}`;
+      }
+
+      function toCsv(responses) {
+        const headers = [
+          "createdAt",
+          "role",
+          "stage",
+          "date",
+          "interviewer",
+          ...ratingQuestions.map((question) => question.key),
+          "issues",
+          "positive",
+          "improve"
+        ];
+
+        const escapeCell = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+        const rows = responses.map((response) =>
+          [
+            response.createdAt,
+            response.role,
+            response.stage,
+            response.date,
+            response.interviewer,
+            ...ratingQuestions.map((question) => response.ratings[question.key]),
+            response.issues.join("; "),
+            response.positive,
+            response.improve
+          ]
+            .map(escapeCell)
+            .join(",")
+        );
+
+        return [headers.join(","), ...rows].join("\n");
+      }
+
+      async function submitToGoogleForms(response) {
+        if (!isGoogleFormsConnected()) {
+          return false;
+        }
+
+        const payload = new FormData();
+        const entries = googleFormConfig.entries;
+        if (entries.role) payload.append(entries.role, response.role);
+        if (entries.stage) payload.append(entries.stage, response.stage);
+        if (entries.date && response.date) {
+          const [year, month, day] = response.date.split("-");
+          payload.append(entries.date.year, year);
+          payload.append(entries.date.month, month);
+          payload.append(entries.date.day, day);
+        }
+        if (entries.interviewer) payload.append(entries.interviewer, response.interviewer);
+        ratingQuestions.forEach((question) => {
+          if (entries[question.key]) {
+            payload.append(entries[question.key], String(response.ratings[question.key]));
+          }
+        });
+        if (entries.issues) payload.append(entries.issues, response.issues.join(", "));
+        if (entries.positive) payload.append(entries.positive, response.positive);
+        if (entries.improve) payload.append(entries.improve, response.improve);
+
+        await fetch(googleFormConfig.formResponseUrl, {
+          method: "POST",
+          mode: "no-cors",
+          body: payload
+        });
+
+        return true;
+      }
+
+      async function submitToGoogleSheet(response) {
+        if (!isGoogleSheetConnected()) {
+          return false;
+        }
+
+        await fetch(googleSheetConfig.appsScriptUrl, {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "text/plain;charset=utf-8"
+          },
+          body: JSON.stringify(response)
+        });
+
+        return true;
+      }
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const response = readForm();
+        const responses = getResponses();
+        responses.push(response);
+        saveResponses(responses);
+
+        let sentToGoogle = false;
+        let sentToSheet = false;
+
+        try {
+          sentToGoogle = await submitToGoogleForms(response);
+        } catch {
+          sentToGoogle = false;
+        }
+
+        try {
+          sentToSheet = await submitToGoogleSheet(response);
+        } catch {
+          sentToSheet = false;
+        }
+
+        form.reset();
+        updateMailLink();
+        statusEl.textContent =
+          sentToGoogle || sentToSheet
+            ? "Готово: ответ сохранен и отправлен в подключенную Google-систему."
+            : "Готово: ответ сохранен в этом браузере. Для отправки в Google Таблицу добавьте Apps Script URL.";
+      });
+
+      copyButton.addEventListener("click", async () => {
+        if (!form.reportValidity()) {
+          return;
+        }
+
+        const response = readForm();
+        const text = formatResponse(response);
+
+        try {
+          await navigator.clipboard.writeText(text);
+          statusEl.textContent = "Ответ скопирован.";
+        } catch {
+          statusEl.textContent = "Не удалось скопировать автоматически. Выделите текст после отправки по email.";
+        }
+      });
+
+      mailButton.addEventListener("click", () => {
+        if (!form.reportValidity()) {
+          return;
+        }
+
+        updateMailLink();
+        window.location.href = mailButton.dataset.href;
+      });
+
+      form.addEventListener("input", updateMailLink);
+
+      renderRatings();
+      renderIssues();
+      updateMailLink();
+    </script>
+  </body>
+</html>
